@@ -25,6 +25,51 @@ import os
 os.makedirs("static", exist_ok=True)
 app.mount("/app", StaticFiles(directory="static", html=True), name="static")
 
+@app.on_event("startup")
+def startup_populate():
+    db = next(get_db())
+    if db.query(models.User).count() == 0:
+        print("Empty database detected. Seeding initial data...")
+        # Add Manager
+        manager = models.User(name="Alice (Manager)", role="manager")
+        db.add(manager)
+        db.commit()
+        db.refresh(manager)
+        
+        # Add Employees
+        employees = [
+            models.User(name="Sahithya", role="employee", manager_id=manager.id),
+            models.User(name="Bob", role="employee", manager_id=manager.id),
+            models.User(name="Charlie", role="employee", manager_id=manager.id)
+        ]
+        db.add_all(employees)
+        db.commit()
+        
+        # Add Project
+        project = models.Project(name="Conexión Core", scheduled_call_time="Daily at 9:00 AM")
+        db.add(project)
+        db.commit()
+        db.refresh(project)
+        
+        # Link users
+        project.users.extend([manager, employees[0], employees[1], employees[2]])
+        
+        # Add Sample Task
+        task = models.Task(
+            title="Explore AI Insights",
+            description="Use the AI Insights tab to query project status.",
+            status="todo",
+            assignee=employees[0].name,
+            assignee_id=employees[0].id,
+            project_id=project.id,
+            priority="high"
+        )
+        db.add(task)
+        db.commit()
+        print("Database seeded successfully.")
+    db.close()
+
+
 @app.get("/api/users", response_model=List[schemas.UserResponse])
 def read_users(db: Session = Depends(get_db)):
     return db.query(models.User).all()
