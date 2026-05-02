@@ -43,10 +43,6 @@
                     <select id="project-selector" class="project-selector" style="margin-right: 15px; padding: 8px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color);">
                         <option value="">All Projects</option>
                     </select>
-                    <button id="ai-standup-btn" class="btn btn-secondary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        Generate AI Standup
-                    </button>
                     <button id="new-task-btn" class="btn btn-primary">+ New Task</button>
                 </div>
             </header>
@@ -110,9 +106,9 @@
             <!-- AI Insights View -->
             <div id="view-ai" class="view-container">
                 <div class="ai-container glass-panel">
-                    <h2>AI Standup & Insights</h2>
+                    <h2>AI Project Insights</h2>
                     <div id="ai-content" class="markdown-body">
-                        <p>Click "Generate AI Standup" to get an automated status report of the team's progress.</p>
+                        <p>Select a project to see an AI-generated overview and progress analysis.</p>
                     </div>
                 </div>
             </div>
@@ -162,6 +158,12 @@
                         <input type="checkbox" id="task-blocked">
                         <label for="task-blocked">Is Blocked?</label>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="task-project-id">Project</label>
+                    <select id="task-project-id" required>
+                        <option value="">Select Project</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary full-width">Save Task</button>
             </form>

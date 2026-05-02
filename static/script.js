@@ -90,11 +90,19 @@ async function fetchProjects() {
         projects = await res.json();
         
         projectSelector.innerHTML = '<option value="">All Projects</option>';
+        const modalProjectSelector = document.getElementById('task-project-id');
+        modalProjectSelector.innerHTML = '<option value="">Select Project</option>';
+        
         projects.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
             opt.textContent = p.name;
             projectSelector.appendChild(opt);
+            
+            const modalOpt = document.createElement('option');
+            modalOpt.value = p.id;
+            modalOpt.textContent = p.name;
+            modalProjectSelector.appendChild(modalOpt);
         });
         
         currentProject = null;
@@ -280,6 +288,9 @@ newTaskBtn.addEventListener('click', () => {
     document.getElementById('task-id').value = '';
     document.getElementById('modal-title').textContent = 'Create Task';
     taskForm.reset();
+    if (currentProject) {
+        document.getElementById('task-project-id').value = currentProject.id;
+    }
     commentsSection.style.display = 'none';
     modal.classList.add('show');
 });
@@ -303,6 +314,7 @@ function openTaskModal(task) {
     document.getElementById('task-priority').value = task.priority;
     document.getElementById('task-assignee').value = task.assignee || '';
     document.getElementById('task-blocked').checked = task.is_blocked;
+    document.getElementById('task-project-id').value = task.project_id || '';
     
     renderComments(task.comments || []);
     commentsSection.style.display = 'block';
@@ -322,6 +334,7 @@ taskForm.addEventListener('submit', async (e) => {
         priority: document.getElementById('task-priority').value,
         assignee: document.getElementById('task-assignee').value,
         is_blocked: document.getElementById('task-blocked').checked,
+        project_id: document.getElementById('task-project-id').value ? parseInt(document.getElementById('task-project-id').value) : null,
     };
     
     const method = id ? 'PUT' : 'POST';
@@ -404,33 +417,37 @@ btnSummarize.addEventListener('click', async (e) => {
     }
 });
 
-document.getElementById('ai-standup-btn').addEventListener('click', async () => {
+document.getElementById('nav-ai').addEventListener('click', async (e) => {
+    e.preventDefault();
     switchView('ai');
-    loadingOverlay.style.display = 'flex';
+    await fetchProjectInsights();
+});
+
+async function fetchProjectInsights() {
+    if (!currentProject) {
+        document.getElementById('ai-content').innerHTML = '<p>Please select a project from the header to see AI-generated insights.</p>';
+        return;
+    }
     
+    loadingOverlay.style.display = 'flex';
     try {
-        let url = `${API_BASE}/ai/standup`;
-        if (currentProject) {
-            url += `?project_id=${currentProject.id}`;
-        }
-        const res = await fetch(url);
+        const res = await fetch(`${API_BASE}/ai/standup?project_id=${currentProject.id}`);
         const data = await res.json();
         
-        const content = document.getElementById('ai-content');
-        // Simple markdown parsing for the AI standup (bolding and lists)
-        let html = data.standup
+        let html = `<h3>Overview for ${currentProject.name}</h3>`;
+        html += data.standup
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\n\*/g, '<br>•')
             .replace(/\n/g, '<br>');
             
-        content.innerHTML = html;
+        document.getElementById('ai-content').innerHTML = html;
     } catch (err) {
-        console.error('AI Standup Error', err);
+        console.error('AI Insights Error', err);
     } finally {
         loadingOverlay.style.display = 'none';
     }
-});
+}
 
 // Initial load
 fetchUsers();
