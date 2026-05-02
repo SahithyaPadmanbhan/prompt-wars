@@ -14,7 +14,10 @@ model = None
 
 if HAS_GEMINI and api_key:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception:
+        model = genai.GenerativeModel('gemini-pro')
 
 def generate_ai_response(prompt: str) -> str:
     if model:

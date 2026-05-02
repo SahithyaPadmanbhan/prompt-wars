@@ -1,8 +1,9 @@
 from database import SessionLocal, engine
 from models import Task, Comment, User, Project, Base
 import datetime
+import random
 
-# Reset DB to apply schema changes
+# Reset DB
 import os
 if os.path.exists("teamsync_v2.db"):
     os.remove("teamsync_v2.db")
@@ -16,13 +17,12 @@ db.add(manager)
 db.commit()
 db.refresh(manager)
 
-employees = [
-    User(name="Sahithya", role="employee", manager_id=manager.id),
-    User(name="Bob", role="employee", manager_id=manager.id),
-    User(name="Charlie", role="employee", manager_id=manager.id),
-    User(name="Diana", role="employee", manager_id=manager.id)
-]
-db.add_all(employees)
+names = ["Sahithya", "Bob", "Charlie", "Diana", "Ethan", "Fiona", "George", "Hannah"]
+employees = []
+for name in names:
+    emp = User(name=name, role="employee", manager_id=manager.id)
+    db.add(emp)
+    employees.append(emp)
 db.commit()
 for e in employees: db.refresh(e)
 
@@ -30,48 +30,53 @@ for e in employees: db.refresh(e)
 projects = [
     Project(name="Project Alpha (AI)", scheduled_call_time="Daily at 10:00 AM"),
     Project(name="Project Beta (Infrastructure)", scheduled_call_time="Weekly on Tuesdays at 2:00 PM"),
-    Project(name="Project Gamma (UI/UX)", scheduled_call_time="Bi-weekly at 11:00 AM")
+    Project(name="Project Gamma (UI/UX)", scheduled_call_time="Bi-weekly at 11:00 AM"),
+    Project(name="Project Delta (Security)", scheduled_call_time="Fridays at 4:00 PM"),
+    Project(name="Project Epsilon (Marketing)", scheduled_call_time="Mondays at 9:00 AM")
 ]
 db.add_all(projects)
 db.commit()
 for p in projects: db.refresh(p)
 
-# Link Users to Projects
-projects[0].users.extend([manager, employees[0], employees[1]])
-projects[1].users.extend([manager, employees[0], employees[2]])
-projects[2].users.extend([manager, employees[1], employees[3]])
+# Link Users to Projects (Randomly)
+for p in projects:
+    p.users.append(manager)
+    team = random.sample(employees, k=random.randint(2, 4))
+    p.users.extend(team)
 db.commit()
 
-# Create tasks with detailed data for queries
-tasks_data = [
-    # Project Alpha
-    {"title": "Implement Gemini API wrapper", "desc": "Create a robust wrapper for the generative AI SDK using Python.", "status": "done", "assignee": employees[0], "project": projects[0], "priority": "high"},
-    {"title": "Design AI Standup Prompts", "desc": "Refine prompts to get more accurate standup reports. Focus on status, blockers, and next steps.", "status": "review", "assignee": employees[1], "project": projects[0], "priority": "high"},
-    {"title": "Test AI summarization", "desc": "Run edge cases for very long comment threads and handle API timeouts.", "status": "in_progress", "assignee": employees[0], "project": projects[0], "priority": "medium"},
-    {"title": "Evaluate Model Performance", "desc": "Compare Gemini 1.5 Flash vs Pro for summarization tasks.", "status": "todo", "assignee": employees[1], "project": projects[0], "priority": "low"},
-    
-    # Project Beta
-    {"title": "Setup GCP Cloud Build", "desc": "Configure triggers for automatic deployment to Cloud Run on every git push.", "status": "done", "assignee": employees[0], "project": projects[1], "priority": "high"},
-    {"title": "Hardened Security Headers", "desc": "Add CORS and other security middleware to FastAPI. Ensure XSS protection on frontend.", "status": "in_progress", "assignee": employees[2], "project": projects[1], "priority": "medium"},
-    {"title": "Database Migration Script", "desc": "Create a script to migrate from SQLite to Postgres. Blocked by lack of prod credentials.", "status": "todo", "assignee": employees[0], "project": projects[1], "priority": "low", "blocked": True},
-    
-    # Project Gamma
-    {"title": "Main Dashboard Design", "desc": "Create high-fidelity mockups for the coordination board using Glassmorphism.", "status": "done", "assignee": employees[3], "project": projects[2], "priority": "medium"},
-    {"title": "Accessibility Audit", "desc": "Ensure all elements have proper ARIA labels and sufficient color contrast.", "status": "in_progress", "assignee": employees[1], "project": projects[2], "priority": "high"},
-    {"title": "Responsive Layout Fixes", "desc": "Fix the sidebar behavior on mobile devices and tablet orientations.", "status": "todo", "assignee": employees[3], "project": projects[2], "priority": "low"}
+# Create 40 tasks
+statuses = ["todo", "in_progress", "review", "done"]
+priorities = ["low", "medium", "high"]
+task_titles = [
+    "Implement Gemini API wrapper", "Design AI Standup Prompts", "Test AI summarization", "Evaluate Model Performance",
+    "Setup GCP Cloud Build", "Hardened Security Headers", "Database Migration Script", "Network Configuration",
+    "Main Dashboard Design", "Accessibility Audit", "Responsive Layout Fixes", "SVG Icon System",
+    "OAuth2.0 Integration", "JWT Token Handling", "API Documentation (Swagger)", "Performance Benchmarking",
+    "User Onboarding Flow", "Notification Service", "Email Template Design", "Error Logging Middleware",
+    "Unit Test Coverage", "Integration Testing", "Load Testing for API", "Documentation for Deployment",
+    "Mobile App Wireframes", "Android App Shell", "iOS App Shell", "Push Notification Setup",
+    "Landing Page Copy", "Social Media Graphics", "Marketing Strategy Plan", "SEO Optimization",
+    "Dependency Audit", "Package Security Scans", "Secret Rotation Script", "Firewall Rules Review",
+    "CI/CD Pipeline Optimization", "Docker Image Minimization", "Cache Strategy Implementation", "Web Analytics Setup"
 ]
 
 tasks = []
-for t in tasks_data:
+for i in range(len(task_titles)):
+    project = random.choice(projects)
+    # Pick a user assigned to this project
+    assignee = random.choice(project.users)
+    
     task = Task(
-        title=t["title"],
-        description=t["desc"],
-        status=t["status"],
-        assignee=t["assignee"].name,
-        assignee_id=t["assignee"].id,
-        project_id=t["project"].id,
-        priority=t["priority"],
-        is_blocked=t.get("blocked", False)
+        title=task_titles[i],
+        description=f"Detailed description for {task_titles[i]}. This is an automated task generated for demonstration purposes.",
+        status=random.choice(statuses),
+        assignee=assignee.name,
+        assignee_id=assignee.id,
+        project_id=project.id,
+        priority=random.choice(priorities),
+        is_blocked=random.random() < 0.15,
+        created_at=datetime.datetime.utcnow() - datetime.timedelta(days=random.randint(0, 10))
     )
     tasks.append(task)
 
@@ -79,16 +84,22 @@ db.add_all(tasks)
 db.commit()
 for t in tasks: db.refresh(t)
 
-# Add comments
-comments = [
-    Comment(task_id=tasks[0].id, content="API wrapper is ready and tested with mock data.", author="Sahithya"),
-    Comment(task_id=tasks[1].id, content="Working on the system prompt today. Need review from Alice.", author="Bob"),
-    Comment(task_id=tasks[5].id, content="CORS middleware is added. Need to test with production domains.", author="Charlie"),
-    Comment(task_id=tasks[6].id, content="Waiting for the DevOps team to provide the Cloud SQL connection string.", author="Sahithya")
-]
-
-db.add_all(comments)
+# Add some comments to first 20 tasks
+authors = [u.name for u in [manager] + employees]
+for i in range(20):
+    for _ in range(random.randint(1, 4)):
+        comment = Comment(
+            task_id=tasks[i].id,
+            content=random.choice([
+                "Good progress here.", "I'm blocked on this.", "Can we review this together?", 
+                "Added more details to the description.", "Finished the initial draft.", 
+                "Need input from the manager.", "Looking great!"
+            ]),
+            author=random.choice(authors),
+            created_at=datetime.datetime.utcnow() - datetime.timedelta(hours=random.randint(1, 48))
+        )
+        db.add(comment)
 db.commit()
 
-print("Database seeded with hierarchy and detailed data!")
+print(f"Database seeded with {len(tasks)} tasks and {len(projects)} projects!")
 db.close()

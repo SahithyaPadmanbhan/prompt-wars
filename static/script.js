@@ -11,6 +11,7 @@ let filterType = 'team'; // 'me' or 'team'
 let currentDraggedTask = null;
 let statusChartInstance = null;
 let priorityChartInstance = null;
+let projectChartInstance = null;
 
 // DOM Elements
 const userSelector = document.getElementById('user-selector');
@@ -251,17 +252,20 @@ function renderBoard() {
     if (document.getElementById('view-dashboard').classList.contains('active')) {
         renderDashboard();
     }
-}
-
-function renderDashboard() {
+}function renderDashboard() {
     const statusCounts = { todo: 0, in_progress: 0, review: 0, done: 0 };
     const priorityCounts = { low: 0, medium: 0, high: 0 };
+    const projectCounts = {};
 
     tasks.forEach(task => {
         if (statusCounts[task.status] !== undefined) statusCounts[task.status]++;
         if (priorityCounts[task.priority] !== undefined) priorityCounts[task.priority]++;
+        
+        const projName = task.project ? task.project.name : 'Unknown';
+        projectCounts[projName] = (projectCounts[projName] || 0) + 1;
     });
 
+    // Update Status Chart
     const statusCtx = document.getElementById('statusChart').getContext('2d');
     if (statusChartInstance) statusChartInstance.destroy();
     statusChartInstance = new Chart(statusCtx, {
@@ -274,9 +278,10 @@ function renderDashboard() {
                 borderWidth: 0
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#f8fafc' } } } }
+        options: { plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }, cutout: '70%' }
     });
 
+    // Update Priority Chart
     const priorityCtx = document.getElementById('priorityChart').getContext('2d');
     if (priorityChartInstance) priorityChartInstance.destroy();
     priorityChartInstance = new Chart(priorityCtx, {
@@ -284,21 +289,75 @@ function renderDashboard() {
         data: {
             labels: ['Low', 'Medium', 'High'],
             datasets: [{
-                label: 'Tasks',
                 data: [priorityCounts.low, priorityCounts.medium, priorityCounts.high],
                 backgroundColor: ['#3b82f6', '#eab308', '#ef4444'],
+                borderRadius: 4
+            }]
+        },
+        options: { 
+            plugins: { legend: { display: false } },
+            scales: { 
+                y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
+    
+    // Update Project Chart
+    const projectCtx = document.getElementById('projectChart').getContext('2d');
+    if (projectChartInstance) projectChartInstance.destroy();
+    projectChartInstance = new Chart(projectCtx, {
+        type: 'polarArea',
+        data: {
+            labels: Object.keys(projectCounts),
+            datasets: [{
+                data: Object.values(projectCounts),
+                backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316'],
                 borderWidth: 0
             }]
         },
         options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            }
+            scales: { r: { grid: { color: '#334155' }, ticks: { display: false } } },
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } 
         }
+    });
+    
+    // Update Recent Activity (Comments)
+    renderRecentActivity();
+}
+
+function renderRecentActivity() {
+    const list = document.getElementById('recent-activity-list');
+    list.innerHTML = '';
+    
+    // Flatten all comments from tasks
+    let allComments = [];
+    tasks.forEach(t => {
+        if (t.comments) {
+            t.comments.forEach(c => {
+                allComments.push({ ...c, taskTitle: t.title });
+            });
+        }
+    });
+    
+    // Sort by date (desc)
+    allComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    if (allComments.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9em;">No recent activity.</p>';
+        return;
+    }
+    
+    allComments.slice(0, 10).forEach(c => {
+        const div = document.createElement('div');
+        div.style.padding = '10px 0';
+        div.style.borderBottom = '1px solid var(--border-color)';
+        div.innerHTML = `
+            <div style="font-size: 0.85em; font-weight: 600; color: var(--accent-primary);">${c.author}</div>
+            <div style="font-size: 0.8em; margin: 2px 0;">${c.content}</div>
+            <div style="font-size: 0.7em; color: var(--text-secondary);">on <span style="color: var(--text-primary);">${c.taskTitle}</span></div>
+        `;
+        list.appendChild(div);
     });
 }
 
