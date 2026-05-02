@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamSync - AI-First Coordination</title>
+    <meta name="description" content="An AI-first platform for team coordination and communication.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/app/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span>TeamSync</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="active" id="nav-board">Kanban Board</a>
+                <a href="#" id="nav-dashboard">Dashboard</a>
+                <a href="#" id="nav-ai">AI Insights</a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar">U</div>
+                <div class="user-info">
+                    <span class="user-name">Demo User</span>
+                    <span class="user-role">Developer</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Kanban Board</h1>
+                <div class="header-actions">
+                    <button id="ai-standup-btn" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        Generate AI Standup
+                    </button>
+                    <button id="new-task-btn" class="btn btn-primary">+ New Task</button>
+                </div>
+            </header>
+
+            <!-- Kanban Board View -->
+            <div id="view-board" class="view-container active">
+                <div class="kanban-board">
+                    <!-- Columns -->
+                    <div class="kanban-column" id="col-todo" data-status="todo">
+                        <div class="column-header">
+                            <h2>To Do</h2>
+                            <span class="task-count" id="count-todo">0</span>
+                        </div>
+                        <div class="task-list" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')"></div>
+                    </div>
+                    
+                    <div class="kanban-column" id="col-in_progress" data-status="in_progress">
+                        <div class="column-header">
+                            <h2>In Progress</h2>
+                            <span class="task-count" id="count-in_progress">0</span>
+                        </div>
+                        <div class="task-list" ondragover="allowDrop(event)" ondrop="drop(event, 'in_progress')"></div>
+                    </div>
+
+                    <div class="kanban-column" id="col-review" data-status="review">
+                        <div class="column-header">
+                            <h2>Review</h2>
+                            <span class="task-count" id="count-review">0</span>
+                        </div>
+                        <div class="task-list" ondragover="allowDrop(event)" ondrop="drop(event, 'review')"></div>
+                    </div>
+
+                    <div class="kanban-column" id="col-done" data-status="done">
+                        <div class="column-header">
+                            <h2>Done</h2>
+                            <span class="task-count" id="count-done">0</span>
+                        </div>
+                        <div class="task-list" ondragover="allowDrop(event)" ondrop="drop(event, 'done')"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights View -->
+            <div id="view-ai" class="view-container">
+                <div class="ai-container glass-panel">
+                    <h2>AI Standup & Insights</h2>
+                    <div id="ai-content" class="markdown-body">
+                        <p>Click "Generate AI Standup" to get an automated status report of the team's progress.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Create Task</h2>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Title</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-desc">Description</label>
+                    <textarea id="task-desc" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-status">Status</label>
+                        <select id="task-status">
+                            <option value="todo">To Do</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="review">Review</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-priority">Priority</label>
+                        <select id="task-priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-assignee">Assignee</label>
+                        <input type="text" id="task-assignee">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="task-blocked">
+                        <label for="task-blocked">Is Blocked?</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary full-width">Save Task</button>
+            </form>
+            
+            <div id="task-comments-section" style="display: none;">
+                <hr>
+                <div class="section-header">
+                    <h3>Comments</h3>
+                    <button id="btn-summarize" class="btn btn-small btn-secondary">AI Summarize</button>
+                </div>
+                <div id="ai-summary-box" class="ai-box" style="display: none;"></div>
+                <div id="comments-list" class="comments-list"></div>
+                <form id="comment-form" class="comment-form">
+                    <input type="text" id="comment-input" placeholder="Type a comment... (use @name to mention)">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Overlay Loading -->
+    <div id="loading-overlay" class="overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>AI is processing...</p>
+    </div>
+
+    <script src="/app/script.js"></script>
+</body>
+</html>
