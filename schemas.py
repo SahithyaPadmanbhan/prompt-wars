@@ -5,6 +5,7 @@ import datetime
 class UserBase(BaseModel):
     name: str
     role: str
+    manager_id: Optional[int] = None
 
 class UserResponse(UserBase):
     id: int

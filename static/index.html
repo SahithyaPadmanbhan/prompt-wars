@@ -25,6 +25,7 @@
             <div class="user-profile">
                 <div class="avatar" id="current-user-avatar">?</div>
                 <div class="user-info">
+                    <span style="font-size: 0.7em; color: var(--text-secondary); text-transform: uppercase;">Active User</span>
                     <select id="user-selector" class="user-selector" aria-label="Select current user role">
                         <option value="">Loading...</option>
                     </select>
@@ -40,6 +41,10 @@
                     <div id="project-info" style="font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;"></div>
                 </div>
                 <div class="header-actions">
+                    <div class="view-toggle" style="margin-right: 15px; display: flex; background: var(--bg-surface); padding: 4px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <button id="btn-view-me" class="btn btn-small" style="padding: 4px 10px; border-radius: 4px;">My Tasks</button>
+                        <button id="btn-view-team" class="btn btn-small btn-primary" style="padding: 4px 10px; border-radius: 4px;">Team Tasks</button>
+                    </div>
                     <select id="project-selector" class="project-selector" aria-label="Filter tasks by project" style="margin-right: 15px; padding: 8px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color);">
                         <option value="">All Projects</option>
                     </select>

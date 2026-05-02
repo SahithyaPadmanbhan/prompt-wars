@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from database import Base
 import datetime
 
@@ -14,7 +14,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     role = Column(String, default="employee") # employee, manager
+    manager_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
     projects = relationship("Project", secondary=user_project_association, back_populates="users")
+    subordinates = relationship("User", backref=backref("manager", remote_side=[id]))
 
 class Project(Base):
     __tablename__ = "projects"
@@ -32,7 +35,7 @@ class Task(Base):
     description = Column(Text, nullable=True)
     status = Column(String, default="todo") # todo, in_progress, review, done
     assignee_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    assignee = Column(String, nullable=True) # Legacy text field
+    assignee = Column(String, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     due_date = Column(DateTime, nullable=True)
     priority = Column(String, default="medium") # low, medium, high
@@ -41,7 +44,7 @@ class Task(Base):
 
     comments = relationship("Comment", back_populates="task", cascade="all, delete-orphan")
     project = relationship("Project", back_populates="tasks")
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[assignee_id])
 
 class Comment(Base):
     __tablename__ = "comments"

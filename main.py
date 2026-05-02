@@ -13,10 +13,9 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Conexión - AI-First Coordination Platform")
 
-# Security: Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with specific domains
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,24 +35,30 @@ def read_projects(user_id: Optional[int] = None, db: Session = Depends(get_db)):
     if user_id:
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if user and user.role != 'manager':
-            # Employees only see their own projects
             return user.projects
-        # Managers see all projects, so fall through to query.all()
     return query.all()
 
 @app.get("/api/tasks", response_model=List[schemas.TaskResponse])
-def read_tasks(skip: int = 0, limit: int = 100, project_id: Optional[int] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+def read_tasks(
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: Optional[int] = None, 
+    user_id: Optional[int] = None, 
+    filter_type: str = "team", # "me" or "team"
+    db: Session = Depends(get_db)
+):
     query = db.query(models.Task)
     
-    # If a user is provided, we might want to filter tasks based on role.
     if user_id:
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if user:
-            if user.role == 'manager':
-                # managers can see all tasks, or filter by project if provided
+            if filter_type == "me":
+                query = query.filter(models.Task.assignee_id == user_id)
+            elif user.role == 'manager':
+                # Managers see all tasks for the team/projects
                 pass
             else:
-                # employees see tasks for their projects
+                # Employees see tasks for their projects (team view)
                 project_ids = [p.id for p in user.projects]
                 query = query.filter(models.Task.project_id.in_(project_ids))
     
@@ -119,17 +124,34 @@ def ai_summarize_task(task_id: int, db: Session = Depends(get_db)):
     return {"summary": summary}
 
 @app.post("/api/ai/query")
-def ai_query(request: schemas.AIRequest, project_id: Optional[int] = None, db: Session = Depends(get_db)):
-    # Fetch relevant project data to provide context to the AI
-    query_context = ""
+def ai_query(request: schemas.AIRequest, project_id: Optional[int] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    # Enhanced context for AI query
+    context = "System Context: You are an AI coordination assistant for a platform called Conexión.\n"
+    
+    if user_id:
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if user:
+            context += f"Current User: {user.name} (Role: {user.role})\n"
+            if user.role == 'manager':
+                context += "You are helping a manager who can see all tasks and employees.\n"
+            else:
+                context += "You are helping an employee. They should focus on their tasks and their team's action items.\n"
+
     if project_id:
         project = db.query(models.Project).filter(models.Project.id == project_id).first()
         if project:
-            query_context = f"Project: {project.name}\n"
+            context += f"Project context: {project.name}\n"
             tasks = db.query(models.Task).filter(models.Task.project_id == project_id).all()
+            context += "Tasks in this project:\n"
             for t in tasks:
-                query_context += f"- [{t.status}] {t.title} (Assigned to: {t.assignee})\n"
-    
-    prompt = f"Context about the team coordination platform:\n{query_context}\n\nUser Question: {request.prompt}\n\nPlease provide a helpful and concise answer based on the context."
+                context += f"- {t.title} (Status: {t.status}, Assignee: {t.assignee}, Priority: {t.priority}, Blocked: {t.is_blocked})\n"
+    else:
+        # Global context if no project selected
+        tasks = db.query(models.Task).limit(20).all()
+        context += "Recent tasks across all projects:\n"
+        for t in tasks:
+            context += f"- {t.title} (Project: {t.project.name if t.project else 'N/A'}, Status: {t.status}, Assignee: {t.assignee})\n"
+
+    prompt = f"{context}\nUser Question: {request.prompt}\n\nProvide a detailed and helpful response based on the data above. If the user asks 'where am I' or 'who am I', refer to the Current User info."
     response = ai_utils.generate_ai_response(prompt)
     return {"response": response}

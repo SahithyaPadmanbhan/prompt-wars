@@ -6,6 +6,7 @@ let users = [];
 let projects = [];
 let currentUser = null;
 let currentProject = null;
+let filterType = 'team'; // 'me' or 'team'
 
 let currentDraggedTask = null;
 let statusChartInstance = null;
@@ -131,7 +132,7 @@ function updateProjectInfo() {
 async function fetchTasks() {
     if (!currentUser) return;
     try {
-        let url = `${API_BASE}/tasks?user_id=${currentUser.id}`;
+        let url = `${API_BASE}/tasks?user_id=${currentUser.id}&filter_type=${filterType}`;
         if (currentProject) {
             url += `&project_id=${currentProject.id}`;
         }
@@ -142,6 +143,21 @@ async function fetchTasks() {
         console.error('Failed to fetch tasks', err);
     }
 }
+
+// View Toggle Handlers
+document.getElementById('btn-view-me').addEventListener('click', () => {
+    filterType = 'me';
+    document.getElementById('btn-view-me').classList.add('btn-primary');
+    document.getElementById('btn-view-team').classList.remove('btn-primary');
+    fetchTasks();
+});
+
+document.getElementById('btn-view-team').addEventListener('click', () => {
+    filterType = 'team';
+    document.getElementById('btn-view-team').classList.add('btn-primary');
+    document.getElementById('btn-view-me').classList.remove('btn-primary');
+    fetchTasks();
+});
 
 // Render Board
 function renderBoard() {
@@ -472,7 +488,10 @@ document.getElementById('btn-ai-query').addEventListener('click', async () => {
     
     loadingOverlay.style.display = 'flex';
     try {
-        const url = `${API_BASE}/ai/query` + (currentProject ? `?project_id=${currentProject.id}` : '');
+        let url = `${API_BASE}/ai/query?user_id=${currentUser.id}`;
+        if (currentProject) {
+            url += `&project_id=${currentProject.id}`;
+        }
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
