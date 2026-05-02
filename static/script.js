@@ -87,8 +87,18 @@ async function fetchUsers() {
         users.forEach(u => {
             const opt = document.createElement('option');
             opt.value = u.id;
-            opt.textContent = `${u.name} (${u.role})`;
+            opt.textContent = u.name;
             userSelector.appendChild(opt);
+        });
+        
+        // Populate assignee dropdown in the task modal
+        const assigneeSelect = document.getElementById('task-assignee');
+        assigneeSelect.innerHTML = '<option value="">-- Unassigned --</option>';
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.name;
+            assigneeSelect.appendChild(opt);
         });
         
         if (users.length > 0) {
@@ -117,7 +127,7 @@ async function fetchProjects() {
         
         projectSelector.innerHTML = '<option value="">All Projects</option>';
         const modalProjectSelector = document.getElementById('task-project-id');
-        modalProjectSelector.innerHTML = '<option value="">Select Project</option>';
+        modalProjectSelector.innerHTML = '<option value="">-- No Project --</option>';
         
         projects.forEach(p => {
             const opt = document.createElement('option');
@@ -436,9 +446,11 @@ function openTaskModal(task) {
     document.getElementById('task-desc').value = task.description || '';
     document.getElementById('task-status').value = task.status;
     document.getElementById('task-priority').value = task.priority;
-    document.getElementById('task-assignee').value = task.assignee || '';
+    // Set assignee by user ID
+    document.getElementById('task-assignee').value = task.assignee_id || '';
     document.getElementById('task-blocked').checked = task.is_blocked;
     document.getElementById('task-project-id').value = task.project_id || '';
+    document.getElementById('task-form-error').style.display = 'none';
     
     renderComments(task.comments || []);
     commentsSection.style.display = 'block';
@@ -451,29 +463,46 @@ taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const id = document.getElementById('task-id').value;
+    const assigneeId = document.getElementById('task-assignee').value;
+    // Find user by id to get their name
+    const assigneeUser = users.find(u => u.id == assigneeId);
+    
     const taskData = {
-        title: document.getElementById('task-title').value,
-        description: document.getElementById('task-desc').value,
+        title: document.getElementById('task-title').value.trim(),
+        description: document.getElementById('task-desc').value.trim(),
         status: document.getElementById('task-status').value,
         priority: document.getElementById('task-priority').value,
-        assignee: document.getElementById('task-assignee').value,
+        assignee: assigneeUser ? assigneeUser.name : null,
+        assignee_id: assigneeId ? parseInt(assigneeId) : null,
         is_blocked: document.getElementById('task-blocked').checked,
         project_id: document.getElementById('task-project-id').value ? parseInt(document.getElementById('task-project-id').value) : null,
     };
     
     const method = id ? 'PUT' : 'POST';
     const url = id ? `${API_BASE}/tasks/${id}` : `${API_BASE}/tasks`;
+    const errBox = document.getElementById('task-form-error');
+    errBox.style.display = 'none';
     
     try {
-        await fetch(url, {
+        const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(taskData)
         });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            errBox.textContent = err.detail || 'Failed to save task. Please try again.';
+            errBox.style.display = 'block';
+            return;
+        }
+        
         modal.classList.remove('show');
-        fetchTasks();
+        await fetchTasks(); // await to ensure board updates
     } catch (err) {
         console.error('Save failed', err);
+        errBox.textContent = 'Network error. Please check your connection.';
+        errBox.style.display = 'block';
     }
 });
 
