@@ -38,6 +38,27 @@ def read_projects(user_id: Optional[int] = None, db: Session = Depends(get_db)):
             return user.projects
     return query.all()
 
+@app.post("/api/projects", response_model=schemas.ProjectResponse)
+def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
+    db_project = models.Project(**project.model_dump())
+    db.add(db_project)
+    db.commit()
+    db.refresh(db_project)
+    return db_project
+
+@app.put("/api/projects/{project_id}", response_model=schemas.ProjectResponse)
+def update_project(project_id: int, project_update: schemas.ProjectBase, db: Session = Depends(get_db)):
+    db_project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not db_project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    for key, value in project_update.model_dump().items():
+        setattr(db_project, key, value)
+        
+    db.commit()
+    db.refresh(db_project)
+    return db_project
+
 @app.get("/api/tasks", response_model=List[schemas.TaskResponse])
 def read_tasks(
     skip: int = 0, 

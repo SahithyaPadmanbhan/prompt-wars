@@ -27,10 +27,17 @@ const commentsSection = document.getElementById('task-comments-section');
 const commentForm = document.getElementById('comment-form');
 const btnSummarize = document.getElementById('btn-summarize');
 
+// Project Modal Elements
+const projectModal = document.getElementById('project-modal');
+const newProjectBtn = document.getElementById('new-project-btn');
+const closeProjectBtn = document.getElementById('close-project-modal');
+const projectForm = document.getElementById('project-form');
+
 // Navigation
-document.getElementById('nav-board').addEventListener('click', (e) => {
+document.getElementById('nav-overview').addEventListener('click', (e) => {
     e.preventDefault();
-    switchView('board');
+    switchView('overview');
+    renderOverview();
 });
 
 document.getElementById('nav-dashboard').addEventListener('click', (e) => {
@@ -39,9 +46,15 @@ document.getElementById('nav-dashboard').addEventListener('click', (e) => {
     renderDashboard();
 });
 
-document.getElementById('nav-ai').addEventListener('click', (e) => {
+document.getElementById('nav-board').addEventListener('click', (e) => {
+    e.preventDefault();
+    switchView('board');
+});
+
+document.getElementById('nav-ai').addEventListener('click', async (e) => {
     e.preventDefault();
     switchView('ai');
+    await fetchProjectInsights();
 });
 
 function switchView(view) {
@@ -50,6 +63,18 @@ function switchView(view) {
     
     document.getElementById(`nav-${view}`).classList.add('active');
     document.getElementById(`view-${view}`).classList.add('active');
+    
+    // Update Header Title
+    const titleMap = {
+        'overview': 'Project Overview',
+        'dashboard': 'Dashboard',
+        'board': 'Activity Board',
+        'ai': 'AI Project Insights'
+    };
+    const titleEl = document.getElementById('main-view-title');
+    if (titleEl) {
+        titleEl.textContent = titleMap[view] || 'Activity Board';
+    }
 }
 
 // Fetch and Set Context
@@ -109,9 +134,43 @@ async function fetchProjects() {
         currentProject = null;
         updateProjectInfo();
         await fetchTasks();
+        
+        // If we are on the overview page, re-render it
+        if (document.getElementById('view-overview').classList.contains('active')) {
+            renderOverview();
+        }
     } catch (err) {
         console.error('Failed to fetch projects', err);
     }
+}
+
+function renderOverview() {
+    const list = document.getElementById('project-overview-list');
+    list.innerHTML = '';
+    
+    projects.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'dashboard-card glass-panel project-card';
+        div.style.borderLeft = '4px solid var(--accent-primary)';
+        
+        div.innerHTML = `
+            <h3>${p.name}</h3>
+            <p style="color: var(--text-secondary); margin: 10px 0;">Scheduled Call: ${p.scheduled_call_time || 'N/A'}</p>
+            <div style="font-size: 0.85em; margin-top: 15px;">
+                <span style="color: var(--accent-primary);">✓</span> Participating Members: ${p.users ? p.users.length : 0}
+            </div>
+            <button class="btn btn-secondary btn-small" style="margin-top: 15px;" onclick="selectProjectAndSwitch(${p.id})">Open Board</button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function selectProjectAndSwitch(projectId) {
+    projectSelector.value = projectId;
+    currentProject = projects.find(p => p.id == projectId);
+    updateProjectInfo();
+    switchView('board');
+    fetchTasks();
 }
 
 projectSelector.addEventListener('change', async (e) => {
@@ -314,6 +373,41 @@ async function drop(e, status) {
 }
 
 // Modal Logic
+newProjectBtn.addEventListener('click', () => {
+    document.getElementById('project-id-field').value = '';
+    document.getElementById('project-modal-title').textContent = 'Create Project';
+    projectForm.reset();
+    projectModal.classList.add('show');
+});
+
+closeProjectBtn.addEventListener('click', () => {
+    projectModal.classList.remove('show');
+});
+
+projectForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('project-id-field').value;
+    const projectData = {
+        name: document.getElementById('project-name').value,
+        scheduled_call_time: document.getElementById('project-call-time').value,
+    };
+    
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `${API_BASE}/projects/${id}` : `${API_BASE}/projects`;
+    
+    try {
+        await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectData)
+        });
+        projectModal.classList.remove('show');
+        await fetchProjects();
+    } catch (err) {
+        console.error('Project save failed', err);
+    }
+});
+
 newTaskBtn.addEventListener('click', () => {
     document.getElementById('task-id').value = '';
     document.getElementById('modal-title').textContent = 'Create Task';

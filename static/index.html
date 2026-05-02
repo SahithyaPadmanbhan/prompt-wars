@@ -18,8 +18,9 @@
                 <span>Conexión</span>
             </div>
             <nav class="nav-links">
-                <a href="#" class="active" id="nav-board">Kanban Board</a>
+                <a href="#" id="nav-overview">Project Overview</a>
                 <a href="#" id="nav-dashboard">Dashboard</a>
+                <a href="#" id="nav-board" class="active">Activity Board</a>
                 <a href="#" id="nav-ai">AI Insights</a>
             </nav>
             <div class="user-profile">
@@ -37,7 +38,7 @@
         <main class="main-content">
             <header class="top-header">
                 <div>
-                    <h1>Kanban Board</h1>
+                    <h1 id="main-view-title">Activity Board</h1>
                     <div id="project-info" style="font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;"></div>
                 </div>
                 <div class="header-actions">
@@ -52,7 +53,21 @@
                 </div>
             </header>
 
-            <!-- Kanban Board View -->
+            <!-- Project Overview View -->
+            <div id="view-overview" class="view-container">
+                <div class="overview-container glass-panel">
+                    <div class="section-header">
+                        <h2>Our Projects</h2>
+                        <button id="new-project-btn" class="btn btn-primary">+ New Project</button>
+                    </div>
+                    <div id="project-overview-list" class="project-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <!-- Project cards will be injected here -->
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kanban Board (Activity Board) View -->
             <div id="view-board" class="view-container active">
                 <div class="kanban-board">
                     <!-- Columns -->
@@ -194,6 +209,26 @@
                     <button type="submit" class="btn btn-primary">Send</button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div id="project-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close" id="close-project-modal">&times;</span>
+            <h2 id="project-modal-title">Create Project</h2>
+            <form id="project-form">
+                <input type="hidden" id="project-id-field">
+                <div class="form-group">
+                    <label for="project-name">Project Name</label>
+                    <input type="text" id="project-name" required placeholder="e.g. Project Delta">
+                </div>
+                <div class="form-group">
+                    <label for="project-call-time">Scheduled Call Time</label>
+                    <input type="text" id="project-call-time" placeholder="e.g. Daily at 10:00 AM">
+                </div>
+                <button type="submit" class="btn btn-primary full-width">Save Project</button>
+            </form>
         </div>
     </div>
 

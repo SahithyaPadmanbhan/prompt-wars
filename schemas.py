@@ -16,6 +16,9 @@ class ProjectBase(BaseModel):
     name: str
     scheduled_call_time: Optional[str] = None
 
+class ProjectCreate(ProjectBase):
+    pass
+
 class ProjectResponse(ProjectBase):
     id: int
     users: List[UserResponse] = []
