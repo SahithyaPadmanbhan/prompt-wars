@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conexión - AI-First Coordination</title>
-    <meta name="description" content="An AI-first platform for team coordination and communication.">
+    <title>Conexión - AI-First Team Platform</title>
+    <meta name="description" content="A premium AI-first coordination platform for modern teams.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/app/style.css">
 </head>
 <body>
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -247,6 +252,12 @@
             </form>
         </div>
     </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+    
+    <!-- ARIA Live Region for accessibility status updates -->
+    <div id="aria-announcer" class="sr-only" aria-live="polite" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;"></div>
 
     <!-- AI Overlay Loading -->
     <div id="loading-overlay" class="overlay" style="display: none;">

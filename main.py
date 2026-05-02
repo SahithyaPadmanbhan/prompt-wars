@@ -8,11 +8,40 @@ import schemas
 from database import engine, get_db
 import ai_utils
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Conexión - AI-First Coordination Platform")
+app = FastAPI(
+    title="Conexión - AI-First Coordination Platform",
+    description="Secure and efficient platform for team coordination.",
+    version="2.1.0"
+)
 
+# Global Error Handler
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    logger.error(f"HTTP Error: {exc.detail} at {request.url}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "type": "http_error"},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Unhandled Error: {str(exc)} at {request.url}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred. Please try again later.", "type": "server_error"},
+    )
+
+# Security: Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

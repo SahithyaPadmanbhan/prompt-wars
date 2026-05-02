@@ -13,6 +13,43 @@ let statusChartInstance = null;
 let priorityChartInstance = null;
 let projectChartInstance = null;
 
+// Utility: Show Toast Notification
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} glass-panel`;
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.color = 'white';
+    toast.style.fontSize = '0.9rem';
+    toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+    toast.style.animation = 'slideIn 0.3s ease-out';
+    
+    const colors = {
+        success: 'rgba(34, 197, 94, 0.9)',
+        error: 'rgba(239, 68, 68, 0.9)',
+        info: 'rgba(59, 130, 246, 0.9)',
+        warning: 'rgba(234, 179, 8, 0.9)'
+    };
+    toast.style.backgroundColor = colors[type] || colors.info;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
+// Utility: Announce to Screen Readers
+function announceAction(message) {
+    const announcer = document.getElementById('aria-announcer');
+    if (announcer) {
+        announcer.textContent = message;
+    }
+}
+
 // DOM Elements
 const userSelector = document.getElementById('user-selector');
 const projectSelector = document.getElementById('project-selector');
@@ -211,6 +248,7 @@ async function fetchTasks() {
         renderBoard();
     } catch (err) {
         console.error('Failed to fetch tasks', err);
+        showToast('Failed to load tasks. Retrying...', 'error');
     }
 }
 
@@ -465,15 +503,21 @@ projectForm.addEventListener('submit', async (e) => {
     const url = id ? `${API_BASE}/projects/${id}` : `${API_BASE}/projects`;
     
     try {
-        await fetch(url, {
+        const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(projectData)
         });
+        
+        if (!res.ok) throw new Error('Failed to save project');
+        
         projectModal.classList.remove('show');
+        showToast(`Project ${id ? 'updated' : 'created'} successfully!`, 'success');
+        announceAction(`Project ${projectData.name} has been ${id ? 'updated' : 'created'}.`);
         await fetchProjects();
     } catch (err) {
         console.error('Project save failed', err);
+        showToast('Error saving project. Please try again.', 'error');
     }
 });
 
@@ -557,11 +601,14 @@ taskForm.addEventListener('submit', async (e) => {
         }
         
         modal.classList.remove('show');
+        showToast(`Task ${id ? 'updated' : 'created'} successfully!`, 'success');
+        announceAction(`Task ${taskData.title} saved.`);
         await fetchTasks(); // await to ensure board updates
     } catch (err) {
         console.error('Save failed', err);
         errBox.textContent = 'Network error. Please check your connection.';
         errBox.style.display = 'block';
+        showToast('Network error while saving task.', 'error');
     }
 });
 
