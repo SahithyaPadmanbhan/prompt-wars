@@ -226,16 +226,30 @@ function createTaskCard(task) {
     
     let blockedBadge = task.is_blocked ? '<span class="badge blocked">Blocked</span>' : '';
     
-    div.innerHTML = `
-        <div class="task-title">${task.title}</div>
-        <div class="task-meta">
-            <div class="task-assignee">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                ${task.assignee || 'Unassigned'}
-            </div>
-            ${blockedBadge}
-        </div>
-    `;
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'task-title';
+    titleDiv.textContent = task.title;
+    
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'task-meta';
+    
+    const assigneeDiv = document.createElement('div');
+    assigneeDiv.className = 'task-assignee';
+    assigneeDiv.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = task.assignee || 'Unassigned';
+    assigneeDiv.appendChild(nameSpan);
+    
+    metaDiv.appendChild(assigneeDiv);
+    if (task.is_blocked) {
+        const blockedSpan = document.createElement('span');
+        blockedSpan.className = 'badge blocked';
+        blockedSpan.textContent = 'Blocked';
+        metaDiv.appendChild(blockedSpan);
+    }
+    
+    div.appendChild(titleDiv);
+    div.appendChild(metaDiv);
 
     div.addEventListener('dragstart', handleDragStart);
     div.addEventListener('dragend', handleDragEnd);
@@ -442,12 +456,39 @@ async function fetchProjectInsights() {
             .replace(/\n/g, '<br>');
             
         document.getElementById('ai-content').innerHTML = html;
+        document.getElementById('ai-query-response').style.display = 'none';
+        document.getElementById('ai-query-input').value = '';
     } catch (err) {
         console.error('AI Insights Error', err);
     } finally {
         loadingOverlay.style.display = 'none';
     }
 }
+
+document.getElementById('btn-ai-query').addEventListener('click', async () => {
+    const input = document.getElementById('ai-query-input');
+    const prompt = input.value.trim();
+    if (!prompt) return;
+    
+    loadingOverlay.style.display = 'flex';
+    try {
+        const url = `${API_BASE}/ai/query` + (currentProject ? `?project_id=${currentProject.id}` : '');
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+        
+        const box = document.getElementById('ai-query-response');
+        box.textContent = data.response;
+        box.style.display = 'block';
+    } catch (err) {
+        console.error('AI Query Error', err);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
 
 // Initial load
 fetchUsers();

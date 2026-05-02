@@ -7,10 +7,20 @@ import models
 import schemas
 from database import engine, get_db
 import ai_utils
+from fastapi.middleware.cors import CORSMiddleware
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Conexión - AI-First Coordination Platform")
+
+# Security: Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, replace with specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 import os
 os.makedirs("static", exist_ok=True)
@@ -107,3 +117,19 @@ def ai_summarize_task(task_id: int, db: Session = Depends(get_db)):
     
     summary = ai_utils.summarize_task(task_details, comments)
     return {"summary": summary}
+
+@app.post("/api/ai/query")
+def ai_query(request: schemas.AIRequest, project_id: Optional[int] = None, db: Session = Depends(get_db)):
+    # Fetch relevant project data to provide context to the AI
+    query_context = ""
+    if project_id:
+        project = db.query(models.Project).filter(models.Project.id == project_id).first()
+        if project:
+            query_context = f"Project: {project.name}\n"
+            tasks = db.query(models.Task).filter(models.Task.project_id == project_id).all()
+            for t in tasks:
+                query_context += f"- [{t.status}] {t.title} (Assigned to: {t.assignee})\n"
+    
+    prompt = f"Context about the team coordination platform:\n{query_context}\n\nUser Question: {request.prompt}\n\nPlease provide a helpful and concise answer based on the context."
+    response = ai_utils.generate_ai_response(prompt)
+    return {"response": response}

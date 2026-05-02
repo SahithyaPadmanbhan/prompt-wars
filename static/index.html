@@ -25,7 +25,7 @@
             <div class="user-profile">
                 <div class="avatar" id="current-user-avatar">?</div>
                 <div class="user-info">
-                    <select id="user-selector" class="user-selector">
+                    <select id="user-selector" class="user-selector" aria-label="Select current user role">
                         <option value="">Loading...</option>
                     </select>
                 </div>
@@ -40,10 +40,10 @@
                     <div id="project-info" style="font-size: 0.9em; color: var(--text-secondary); margin-top: 5px;"></div>
                 </div>
                 <div class="header-actions">
-                    <select id="project-selector" class="project-selector" style="margin-right: 15px; padding: 8px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color);">
+                    <select id="project-selector" class="project-selector" aria-label="Filter tasks by project" style="margin-right: 15px; padding: 8px; border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color);">
                         <option value="">All Projects</option>
                     </select>
-                    <button id="new-task-btn" class="btn btn-primary">+ New Task</button>
+                    <button id="new-task-btn" class="btn btn-primary" aria-label="Create a new task">+ New Task</button>
                 </div>
             </header>
 
@@ -109,6 +109,14 @@
                     <h2>AI Project Insights</h2>
                     <div id="ai-content" class="markdown-body">
                         <p>Select a project to see an AI-generated overview and progress analysis.</p>
+                    </div>
+                    <div class="ai-query-container" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <h3>Ask AI about the Project</h3>
+                        <div class="query-input-group" style="display: flex; gap: 10px; margin-top: 15px;">
+                            <input type="text" id="ai-query-input" placeholder="e.g., Who is working on the database? or What is blocked?" style="flex: 1; padding: 10px; border-radius: 4px; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary);">
+                            <button id="btn-ai-query" class="btn btn-secondary">Ask Gemini</button>
+                        </div>
+                        <div id="ai-query-response" class="ai-box" style="display: none; margin-top: 20px; background: rgba(59, 130, 246, 0.1);"></div>
                     </div>
                 </div>
             </div>

@@ -5,7 +5,7 @@ import datetime
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
-# Clear existing data (optional, but good for a fresh start)
+# Clear existing data
 db.query(Comment).delete()
 db.query(Task).delete()
 db.query(Project).delete()
@@ -13,104 +13,80 @@ db.query(User).delete()
 db.commit()
 
 # Create Users
-manager1 = User(name="Alice (Manager)", role="manager")
-emp1 = User(name="Sahithya", role="employee")
-emp2 = User(name="Bob", role="employee")
-
-db.add_all([manager1, emp1, emp2])
+users = [
+    User(name="Alice (Manager)", role="manager"),
+    User(name="Sahithya", role="employee"),
+    User(name="Bob", role="employee"),
+    User(name="Charlie", role="employee"),
+    User(name="Diana", role="employee")
+]
+db.add_all(users)
 db.commit()
-
-db.refresh(manager1)
-db.refresh(emp1)
-db.refresh(emp2)
+for u in users: db.refresh(u)
 
 # Create Projects
-proj1 = Project(name="Project Alpha", scheduled_call_time="Daily at 10:00 AM")
-proj2 = Project(name="Project Beta", scheduled_call_time="Weekly on Tuesdays at 2:00 PM")
+projects = [
+    Project(name="Project Alpha (AI)", scheduled_call_time="Daily at 10:00 AM"),
+    Project(name="Project Beta (Infrastructure)", scheduled_call_time="Weekly on Tuesdays at 2:00 PM"),
+    Project(name="Project Gamma (UI/UX)", scheduled_call_time="Bi-weekly at 11:00 AM")
+]
+db.add_all(projects)
+db.commit()
+for p in projects: db.refresh(p)
 
 # Link Users to Projects
-proj1.users.extend([manager1, emp1, emp2])
-proj2.users.extend([manager1, emp1])
-
-db.add_all([proj1, proj2])
+projects[0].users.extend([users[0], users[1], users[2]])
+projects[1].users.extend([users[0], users[1], users[3]])
+projects[2].users.extend([users[0], users[2], users[4]])
 db.commit()
-db.refresh(proj1)
-db.refresh(proj2)
 
 # Create tasks
-tasks = [
-    Task(
-        title="Setup Google Cloud Run deployment",
-        description="We need to write the Dockerfile and configure cloudbuild.yaml for continuous deployment.",
-        status="done",
-        assignee="Sahithya",
-        assignee_id=emp1.id,
-        project_id=proj1.id,
-        priority="high"
-    ),
-    Task(
-        title="Implement AI Summarization",
-        description="Integrate the Gemini API to summarize long comment threads.",
-        status="review",
-        assignee="Bob",
-        assignee_id=emp2.id,
-        project_id=proj1.id,
-        priority="high"
-    ),
-    Task(
-        title="Design Kanban Board UI",
-        description="Use glassmorphism and modern dark mode styling for the main dashboard.",
-        status="in_progress",
-        assignee="Sahithya",
-        assignee_id=emp1.id,
-        project_id=proj2.id,
-        priority="medium"
-    ),
-    Task(
-        title="Fix database connection timeout",
-        description="The app sometimes loses connection to SQLite under load.",
-        status="todo",
-        assignee="Bob",
-        assignee_id=emp2.id,
-        project_id=proj2.id,
-        priority="low",
-        is_blocked=True
-    )
+tasks_data = [
+    # Project Alpha
+    {"title": "Implement Gemini API wrapper", "desc": "Create a robust wrapper for the generative AI SDK.", "status": "done", "assignee": users[1], "project": projects[0], "priority": "high"},
+    {"title": "Design AI Standup Prompts", "desc": "Refine prompts to get more accurate standup reports.", "status": "review", "assignee": users[2], "project": projects[0], "priority": "high"},
+    {"title": "Test AI summarization", "desc": "Run edge cases for very long comment threads.", "status": "in_progress", "assignee": users[1], "project": projects[0], "priority": "medium"},
+    
+    # Project Beta
+    {"title": "Setup GCP Cloud Build", "desc": "Configure triggers for automatic deployment to Cloud Run.", "status": "done", "assignee": users[1], "project": projects[1], "priority": "high"},
+    {"title": "Hardened Security Headers", "desc": "Add CORS and other security middleware to FastAPI.", "status": "in_progress", "assignee": users[3], "project": projects[1], "priority": "medium"},
+    {"title": "Database Migration Script", "desc": "Create a script to migrate from SQLite to Postgres.", "status": "todo", "assignee": users[1], "project": projects[1], "priority": "low", "blocked": True},
+    
+    # Project Gamma
+    {"title": "Main Dashboard Design", "desc": "Create high-fidelity mockups for the coordination board.", "status": "done", "assignee": users[4], "project": projects[2], "priority": "medium"},
+    {"title": "Accessibility Audit", "desc": "Ensure all elements have proper ARIA labels.", "status": "in_progress", "assignee": users[2], "project": projects[2], "priority": "high"},
+    {"title": "Responsive Layout Fixes", "desc": "Fix the sidebar behavior on mobile devices.", "status": "todo", "assignee": users[4], "project": projects[2], "priority": "low"}
 ]
+
+tasks = []
+for t in tasks_data:
+    task = Task(
+        title=t["title"],
+        description=t["desc"],
+        status=t["status"],
+        assignee=t["assignee"].name,
+        assignee_id=t["assignee"].id,
+        project_id=t["project"].id,
+        priority=t["priority"],
+        is_blocked=t.get("blocked", False)
+    )
+    tasks.append(task)
 
 db.add_all(tasks)
 db.commit()
-
-# Refresh to get IDs
-for task in tasks:
-    db.refresh(task)
+for t in tasks: db.refresh(t)
 
 # Add comments
 comments = [
-    Comment(
-        task_id=tasks[1].id,
-        content="I have set up the basic Gemini prompts, but we need an API key to test.",
-        author="Bob"
-    ),
-    Comment(
-        task_id=tasks[1].id,
-        content="Make sure you handle cases where the API returns an error or is unconfigured.",
-        author="Alice (Manager)"
-    ),
-    Comment(
-        task_id=tasks[2].id,
-        content="The drag-and-drop is working perfectly now!",
-        author="Sahithya"
-    ),
-    Comment(
-        task_id=tasks[3].id,
-        content="Waiting for the DevOps team to increase the connection pool size before I can proceed.",
-        author="Bob"
-    )
+    Comment(task_id=tasks[0].id, content="API wrapper is ready and tested.", author="Sahithya"),
+    Comment(task_id=tasks[1].id, content="Working on the system prompt today.", author="Bob"),
+    Comment(task_id=tasks[1].id, content="Please include a section for 'Next Steps'.", author="Alice (Manager)"),
+    Comment(task_id=tasks[4].id, content="CORS middleware is added. Testing with the frontend now.", author="Charlie"),
+    Comment(task_id=tasks[5].id, content="Blocked until we have the production DB credentials.", author="Sahithya")
 ]
 
 db.add_all(comments)
 db.commit()
 
-print("Database seeded successfully with Users, Projects, and Tasks!")
+print("Database seeded with extensive dummy data!")
 db.close()
